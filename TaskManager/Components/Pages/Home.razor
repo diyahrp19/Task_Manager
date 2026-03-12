@@ -1,0 +1,424 @@
+﻿@page "/"
+@using TaskManager.Models
+@using TaskManager.Services
+@rendermode InteractiveServer
+@inject ITaskService TaskService
+
+<PageTitle>Task Dashboard</PageTitle>
+
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+    <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-12">
+            <h1 class="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
+                Task Manager
+            </h1>
+            <p class="text-xl text-gray-600">Manage your tasks efficiently with filtering and search</p>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(operationMessage))
+        {
+            <div class="mb-6 rounded-xl px-4 py-3 text-sm font-medium @(isOperationError ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700")">
+                @operationMessage
+            </div>
+        }
+
+        <!-- Filters and Search -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-12">
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                    <input @bind="searchQuery" @bind:event="oninput" @bind:after="ApplyFilters" placeholder="Search tasks..." 
+                           class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select @bind="selectedStatus" @bind:after="ApplyFilters" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Status</option>
+                        <option value="Todo">To Do</option>
+                        <option value="InProgress">In Progress</option>
+                        <option value="Done">Done</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                    <select @bind="selectedPriority" @bind:after="ApplyFilters" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Priority</option>
+                        <option value="Low">Low</option>
+                        <option value="Medium">Medium</option>
+                        <option value="High">High</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button @onclick="CreateNewTask" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 font-semibold">
+                        + New Task
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tasks List -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            @if (isLoading)
+            {
+                <div class="col-span-full flex justify-center items-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                </div>
+            }
+            else if (!tasks.Any())
+            {
+                <div class="col-span-full text-center py-20">
+                    <div class="text-6xl mb-4">📝</div>
+                    <h2 class="text-2xl font-bold text-gray-600 mb-2">No tasks found</h2>
+                    <p class="text-gray-500">Create your first task to get started</p>
+                </div>
+            }
+            else
+            {
+                @foreach (var task in tasks)
+                {
+                    <TaskCard Task="task" OnEdit="OpenEditModal" OnDelete="OpenDeleteModal" />
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@if (isDeleteModalOpen)
+{
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Delete Task</h2>
+            <p class="text-gray-700 mb-2">Are you sure you want to delete this task?</p>
+            <p class="text-sm text-gray-500 mb-6">@deleteTaskTitle</p>
+
+            @if (!string.IsNullOrWhiteSpace(deleteErrorMessage))
+            {
+                <p class="text-sm text-red-600 mb-4">@deleteErrorMessage</p>
+            }
+
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button" @onclick="CloseDeleteModal" class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button type="button" @onclick="ConfirmDeleteAsync" class="px-5 py-2.5 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (isEditModalOpen)
+{
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Edit Task</h2>
+
+            <div class="space-y-5">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Task Title</label>
+                    <input @bind="editTask.Title" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea @bind="editTask.Description" rows="4" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                        <select @bind="editTask.Status" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="Todo">To Do</option>
+                            <option value="InProgress">In Progress</option>
+                            <option value="Done">Done</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                        <select @bind="editTask.Priority" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
+                    <input type="date" @bind="editTask.DueDate" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(editErrorMessage))
+                {
+                    <p class="text-sm text-red-600">@editErrorMessage</p>
+                }
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" @onclick="CloseEditModal" class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="button" @onclick="SaveEditAsync" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold">
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (isCreateModalOpen)
+{
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Create New Task</h2>
+
+            <div class="space-y-5">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Task Title</label>
+                    <input @bind="newTask.Title" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea @bind="newTask.Description" rows="4" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                        <select @bind="newTask.Status" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="Todo">To Do</option>
+                            <option value="InProgress">In Progress</option>
+                            <option value="Done">Done</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                        <select @bind="newTask.Priority" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                        </select>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(createErrorMessage))
+                {
+                    <p class="text-sm text-red-600">@createErrorMessage</p>
+                }
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" @onclick="CloseCreateModal" class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="button" @onclick="SaveNewTaskAsync" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold">
+                        Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<TaskItem> allTasks = new();
+    private List<TaskItem> tasks = new();
+    private string searchQuery = "";
+    private Status? selectedStatus;
+    private Priority? selectedPriority;
+    private bool isLoading = true;
+    private bool isCreateModalOpen;
+    private string? createErrorMessage;
+    private TaskItem newTask = CreateDefaultTask();
+
+    private bool isEditModalOpen;
+    private string? editErrorMessage;
+    private TaskItem editTask = new();
+
+    private bool isDeleteModalOpen;
+    private string deleteTaskId = string.Empty;
+    private string deleteTaskTitle = string.Empty;
+    private string? deleteErrorMessage;
+
+    private string? operationMessage;
+    private bool isOperationError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTasks();
+    }
+
+    private async Task LoadTasks()
+    {
+        isLoading = true;
+        try
+        {
+            allTasks = await TaskService.GetAllAsync();
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            // Handle error (show message)
+            Console.WriteLine($"Error loading tasks: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+        StateHasChanged();
+    }
+
+    private void ApplyFilters()
+    {
+        var filtered = allTasks.AsEnumerable();
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            filtered = filtered.Where(t => t.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) || 
+                                         (t.Description?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ?? false));
+        }
+        if (selectedStatus.HasValue)
+        {
+            filtered = filtered.Where(t => t.Status == selectedStatus.Value);
+        }
+        if (selectedPriority.HasValue)
+        {
+            filtered = filtered.Where(t => t.Priority == selectedPriority.Value);
+        }
+        tasks = filtered.ToList();
+    }
+
+    private void CreateNewTask()
+    {
+        operationMessage = null;
+        createErrorMessage = null;
+        newTask = CreateDefaultTask();
+        isCreateModalOpen = true;
+    }
+
+    private void CloseCreateModal()
+    {
+        isCreateModalOpen = false;
+        createErrorMessage = null;
+    }
+
+    private async Task SaveNewTaskAsync()
+    {
+        if (string.IsNullOrWhiteSpace(newTask.Title))
+        {
+            createErrorMessage = "Task title is required.";
+            return;
+        }
+
+        try
+        {
+            await TaskService.CreateAsync(newTask);
+            CloseCreateModal();
+            await LoadTasks();
+        }
+        catch (Exception ex)
+        {
+            createErrorMessage = ex.Message;
+        }
+    }
+
+    private void OpenEditModal(TaskItem task)
+    {
+        operationMessage = null;
+        editErrorMessage = null;
+        editTask = new TaskItem
+        {
+            Id = task.Id,
+            Title = task.Title,
+            Description = task.Description,
+            Status = task.Status,
+            Priority = task.Priority,
+            DueDate = task.DueDate,
+            CreatedAt = task.CreatedAt,
+            UpdatedAt = task.UpdatedAt
+        };
+        isEditModalOpen = true;
+    }
+
+    private void CloseEditModal()
+    {
+        isEditModalOpen = false;
+        editErrorMessage = null;
+    }
+
+    private async Task SaveEditAsync()
+    {
+        if (string.IsNullOrWhiteSpace(editTask.Title))
+        {
+            editErrorMessage = "Task title is required.";
+            return;
+        }
+
+        try
+        {
+            await TaskService.UpdateAsync(editTask.Id, editTask);
+            CloseEditModal();
+            await LoadTasks();
+            operationMessage = "Task updated successfully.";
+            isOperationError = false;
+        }
+        catch (Exception ex)
+        {
+            editErrorMessage = ex.Message;
+        }
+    }
+
+    private void OpenDeleteModal(string id)
+    {
+        operationMessage = null;
+        deleteErrorMessage = null;
+        deleteTaskId = id;
+        deleteTaskTitle = allTasks.FirstOrDefault(t => t.Id == id)?.Title ?? "Selected task";
+        isDeleteModalOpen = true;
+    }
+
+    private void CloseDeleteModal()
+    {
+        isDeleteModalOpen = false;
+        deleteTaskId = string.Empty;
+        deleteTaskTitle = string.Empty;
+        deleteErrorMessage = null;
+    }
+
+    private async Task ConfirmDeleteAsync()
+    {
+        if (string.IsNullOrWhiteSpace(deleteTaskId))
+        {
+            deleteErrorMessage = "Task ID is missing. Please try again.";
+            return;
+        }
+
+        try
+        {
+            await TaskService.DeleteAsync(deleteTaskId);
+            CloseDeleteModal();
+            await LoadTasks();
+            operationMessage = "Task deleted successfully.";
+            isOperationError = false;
+        }
+        catch (Exception ex)
+        {
+            deleteErrorMessage = ex.Message;
+            operationMessage = "Failed to delete task.";
+            isOperationError = true;
+        }
+    }
+
+    private static TaskItem CreateDefaultTask()
+    {
+        return new TaskItem
+        {
+            Title = string.Empty,
+            Description = string.Empty,
+            Status = Status.Todo,
+            Priority = Priority.Medium
+        };
+    }
+}
