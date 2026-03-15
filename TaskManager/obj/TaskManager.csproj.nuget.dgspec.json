@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Diya\\Project_Diya\\Task_Manager\\TaskManager\\TaskManager.csproj": {}
+    "D:\\Diya\\Project_Diya\\Task_Manager\\taskmanager\\TaskManager.csproj": {}
   },
   "projects": {
-    "D:\\Diya\\Project_Diya\\Task_Manager\\TaskManager\\TaskManager.csproj": {
+    "D:\\Diya\\Project_Diya\\Task_Manager\\taskmanager\\TaskManager.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Diya\\Project_Diya\\Task_Manager\\TaskManager\\TaskManager.csproj",
+        "projectUniqueName": "D:\\Diya\\Project_Diya\\Task_Manager\\taskmanager\\TaskManager.csproj",
         "projectName": "TaskManager",
-        "projectPath": "D:\\Diya\\Project_Diya\\Task_Manager\\TaskManager\\TaskManager.csproj",
+        "projectPath": "D:\\Diya\\Project_Diya\\Task_Manager\\taskmanager\\TaskManager.csproj",
         "packagesPath": "C:\\Users\\Hiren Patel\\.nuget\\packages\\",
-        "outputPath": "D:\\Diya\\Project_Diya\\Task_Manager\\TaskManager\\obj\\",
+        "outputPath": "D:\\Diya\\Project_Diya\\Task_Manager\\taskmanager\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -50,10 +50,6 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
-            "FluentValidation": {
-              "target": "Package",
-              "version": "[12.1.1, )"
-            },
             "MongoDB.Driver": {
               "target": "Package",
               "version": "[3.7.0, )"

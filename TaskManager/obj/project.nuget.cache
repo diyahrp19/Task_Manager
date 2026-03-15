@@ -1,11 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "kq2r/Qo8ezI=",
+  "dgSpecHash": "b3a1qkMCpm8=",
   "success": true,
-  "projectFilePath": "D:\\Diya\\Project_Diya\\Task_Manager\\TaskManager\\TaskManager.csproj",
+  "projectFilePath": "D:\\Diya\\Project_Diya\\Task_Manager\\taskmanager\\TaskManager.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Hiren Patel\\.nuget\\packages\\dnsclient\\1.6.1\\dnsclient.1.6.1.nupkg.sha512",
-    "C:\\Users\\Hiren Patel\\.nuget\\packages\\fluentvalidation\\12.1.1\\fluentvalidation.12.1.1.nupkg.sha512",
     "C:\\Users\\Hiren Patel\\.nuget\\packages\\microsoft.extensions.logging.abstractions\\2.0.0\\microsoft.extensions.logging.abstractions.2.0.0.nupkg.sha512",
     "C:\\Users\\Hiren Patel\\.nuget\\packages\\microsoft.netcore.platforms\\5.0.0\\microsoft.netcore.platforms.5.0.0.nupkg.sha512",
     "C:\\Users\\Hiren Patel\\.nuget\\packages\\microsoft.win32.registry\\5.0.0\\microsoft.win32.registry.5.0.0.nupkg.sha512",
